@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#030B16" />
+    <meta name="color-scheme" content="dark light" />
+    <title>SY Deck</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/style.css?v=69" />
+  </head>
+  <body>
+
+    <div class="connect-screen" id="connect-screen" hidden>
+      <!-- modo 1: esperando OBS (ponte ok, OBS caiu) -->
+      <div class="connect-card" id="connect-obs" hidden>
+        <div class="connect-spinner" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <h2>Esperando o OBS</h2>
+        <p>Abra o OBS Studio no computador e ative o WebSocket Server em <strong>Ferramentas → WebSocket Server Settings → Enable</strong>.</p>
+        <p class="connect-sub">Assim que conectar, o deck aparece sozinho.</p>
+      </div>
+
+      <!-- modo 2: procurando ponte (API inatingível) -->
+      <div class="connect-card" id="connect-pair" hidden>
+        <div class="connect-icon" aria-hidden="true">
+          <svg viewBox="0 0 256 256" width="52" height="52"><path d="M208 56h-27.72l-9.72-14.59A16 16 0 0 0 157.26 32H98.74a16 16 0 0 0-13.31 7.42L75.72 56H48a24 24 0 0 0-24 24v120a24 24 0 0 0 24 24h160a24 24 0 0 0 24-24V80a24 24 0 0 0-24-24Zm8 144a8 8 0 0 1-8 8H48a8 8 0 0 1-8-8V80a8 8 0 0 1 8-8h32a8 8 0 0 0 6.66-3.56L98.74 48h58.52l12.08 20.44A8 8 0 0 0 176 72h32a8 8 0 0 1 8 8ZM128 88a52 52 0 1 0 52 52 52.06 52.06 0 0 0-52-52Zm0 88a36 36 0 1 1 36-36 36 36 0 0 1-36 36Z"/></svg>
+        </div>
+        <h2>Conectar à ponte</h2>
+        <p>Aponte o celular para o QR Code que aparece no computador quando a ponte sobe.</p>
+        <button class="btn-primary" id="scan-start" type="button">
+          <svg viewBox="0 0 256 256" width="18" height="18" aria-hidden="true"><path d="M60 76v24a4 4 0 0 1-8 0V76a16 16 0 0 1 16-16h24a4 4 0 0 1 0 8H68a8 8 0 0 0-8 8Zm144-16h-24a4 4 0 0 0 0 8h24a8 8 0 0 1 8 8v24a4 4 0 0 0 8 0V76a16 16 0 0 0-16-16ZM100 188H76a8 8 0 0 1-8-8v-24a4 4 0 0 0-8 0v24a16 16 0 0 0 16 16h24a4 4 0 0 0 0-8Zm112-36a4 4 0 0 0-4 4v24a8 8 0 0 1-8 8h-24a4 4 0 0 0 0 8h24a16 16 0 0 0 16-16v-24a4 4 0 0 0-4-4Z"/></svg>
+          <span>Escanear QR</span>
+        </button>
+        <details class="connect-manual">
+          <summary>Ou cole o endereço</summary>
+          <form id="manual-form">
+            <input type="url" id="manual-url" placeholder="http://192.168.0.15:8787" inputmode="url" autocomplete="url" />
+            <button type="submit">Conectar</button>
+          </form>
+        </details>
+      </div>
+
+      <!-- modo 3: scanner aberto -->
+      <div class="scan-overlay" id="scan-overlay" hidden>
+        <video id="scan-video" playsinline muted autoplay></video>
+        <div class="scan-frame" aria-hidden="true"></div>
+        <button class="scan-close" id="scan-close" type="button" aria-label="Fechar">
+          <svg viewBox="0 0 256 256" width="22" height="22"><path d="M205.66 194.34a8 8 0 0 1-11.32 11.32L128 139.31l-66.34 66.35a8 8 0 0 1-11.32-11.32L116.69 128 50.34 61.66a8 8 0 0 1 11.32-11.32L128 116.69l66.34-66.35a8 8 0 0 1 11.32 11.32L139.31 128Z"/></svg>
+        </button>
+        <p class="scan-hint">Centralize o QR Code no quadro</p>
+      </div>
+    </div>
+
+    <main>
+      <!-- DECK customizável -->
+      <section class="tab" data-tab="cenas" aria-labelledby="cenas-title">
+        <div class="deck" id="deck-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="tab" data-tab="mixer" hidden>
+        <div class="mixer" id="mixer-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <!-- Modal: adicionar botão (wizard em 3 passos) -->
+    <div class="deck-modal" id="deck-modal" hidden>
+      <div class="deck-modal-card">
+        <div class="deck-modal-head">
+          <button class="icon-btn" id="deck-modal-back" type="button" aria-label="Voltar" hidden>
+            <svg viewBox="0 0 256 256" class="icon" aria-hidden="true"><path d="M165.66 202.34a8 8 0 0 1-11.32 11.32l-80-80a8 8 0 0 1 0-11.32l80-80a8 8 0 0 1 11.32 11.32L91.31 128Z"/></svg>
+          </button>
+          <h2 id="deck-modal-title">Tipo de botão</h2>
+          <button class="icon-btn" id="deck-modal-close" type="button" aria-label="Fechar">
+            <svg viewBox="0 0 256 256" class="icon" aria-hidden="true"><path d="M205.66 194.34a8 8 0 0 1-11.32 11.32L128 139.31l-66.34 66.35a8 8 0 0 1-11.32-11.32L116.69 128 50.34 61.66a8 8 0 0 1 11.32-11.32L128 116.69l66.34-66.35a8 8 0 0 1 11.32 11.32L139.31 128Z"/></svg>
+          </button>
+        </div>
+
+        <div class="deck-modal-body">
+          <!-- Passo 1: escolhe tipo -->
+          <div class="deck-step" data-step="type">
+            <div class="deck-types">
+              <button class="deck-type" data-type="scene" type="button">
+                <svg viewBox="0 0 256 256" class="icon" aria-hidden="true"><path d="M208 32H48a16 16 0 0 0-16 16v160a16 16 0 0 0 16 16h160a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16Zm0 176H48V48h160Z"/></svg>
+                <span>Cena</span>
+              </button>
+              <button class="deck-type" data-type="pc-media" type="button">
+                <svg viewBox="0 0 256 256" class="icon" aria-hidden="true"><path d="M232.4 114.49 88.32 26.35A16 16 0 0 0 64 39.87v176.26A16 16 0 0 0 88.36 229.65l144.08-88.14a15.81 15.81 0 0 0 0-27Z"/></svg>
+                <span>Mídia PC</span>
+              </button>
+              <button class="deck-type" data-type="mute" type="button">
+                <svg viewBox="0 0 256 256" class="icon" aria-hidden="true"><path d="M128 176a48.05 48.05 0 0 0 48-48V64a48 48 0 0 0-96 0v64a48.05 48.05 0 0 0 48 48Zm0-128a16 16 0 0 1 16 16v64a16 16 0 0 1-32 0V64a16 16 0 0 1 16-16Zm96 80a8 8 0 0 0-8 8 88 88 0 0 1-176 0 8 8 0 0 0-16 0 104.17 104.17 0 0 0 96 103.73V232a8 8 0 0 0 16 0v-24.27A104.17 104.17 0 0 0 232 136a8 8 0 0 0-8-8Z"/></svg>
+                <span>Mutar</span>
+              </button>
+              <button class="deck-type" data-type="source" type="button">
+                <svg viewBox="0 0 256 256" class="icon" aria-hidden="true"><path d="M247.31 124.76c-.35-.79-8.82-19.58-27.65-38.41C194.57 61.26 162.88 48 128 48S61.43 61.26 36.34 86.35C17.51 105.18 9 124 8.69 124.76a8 8 0 0 0 0 6.5c.35.79 8.82 19.57 27.65 38.4C61.43 194.74 93.12 208 128 208s66.57-13.26 91.66-38.34c18.83-18.83 27.3-37.61 27.65-38.4a8 8 0 0 0 0-6.5ZM128 192c-30.78 0-57.67-11.19-79.93-33.25A133.47 133.47 0 0 1 25 128a133.33 133.33 0 0 1 23.07-30.75C70.33 75.19 97.22 64 128 64s57.67 11.19 79.93 33.25A133.46 133.46 0 0 1 231.05 128c-7.21 13.46-38.62 64-103.05 64Zm0-112a48 48 0 1 0 48 48 48.05 48.05 0 0 0-48-48Zm0 80a32 32 0 1 1 32-32 32 32 0 0 1 32 32Z"/></svg>
+                <span>Fonte</span>
+              </button>
+              <button class="deck-type" data-type="stream" type="button">
+                <svg viewBox="0 0 256 256" class="icon" aria-hidden="true"><path d="M128 88a40 40 0 1 0 40 40 40 40 0 0 0-40-40Zm0 64a24 24 0 1 1 24-24 24 24 0 0 1-24 24Z"/></svg>
+                <span>Transmitir</span>
+              </button>
+              <button class="deck-type" data-type="record" type="button">
+                <svg viewBox="0 0 256 256" class="icon" aria-hidden="true"><path d="M128 72a56 56 0 1 0 56 56 56 56 0 0 0-56-56Z"/></svg>
+                <span>Gravar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Passo 2: escolhe alvo -->
+          <div class="deck-step" data-step="target" hidden>
+            <div class="deck-targets" id="deck-targets"></div>
+          </div>
+
+          <!-- Passo 3: rótulo e salvar -->
+          <div class="deck-step" data-step="label" hidden>
+            <div class="deck-preview" id="deck-preview">
+              <span class="deck-preview-kind" id="deck-preview-kind"></span>
+              <span class="deck-preview-target" id="deck-preview-target"></span>
+            </div>
+            <label class="deck-field">
+              <span>Rótulo (como aparece no deck)</span>
+              <input type="text" id="deck-field-label" required autocomplete="off" />
+            </label>
+            <button type="button" class="btn-primary deck-save" id="deck-save">Adicionar botão</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="bottombar" aria-label="Controles">
+      <div class="bottombar-left">
+        <span class="tag tag-mini" id="tag-stream" data-on="false" title="Transmissão">
+          <span class="tag-dot" aria-hidden="true"></span>
+          <span>live</span>
+        </span>
+        <span class="tag tag-mini" id="tag-record" data-on="false" title="Gravação">
+          <span class="tag-dot" aria-hidden="true"></span>
+          <span>rec</span>
+        </span>
+      </div>
+      <div class="bottombar-right">
+        <button class="pill-btn pill-mixer" id="mixer-toggle" type="button" aria-pressed="false">
+          <svg viewBox="0 0 256 256" aria-hidden="true" class="icon"><path d="M128 176a48.05 48.05 0 0 0 48-48V64a48 48 0 0 0-96 0v64a48.05 48.05 0 0 0 48 48Zm-16-112a16 16 0 0 1 32 0v64a16 16 0 0 1-32 0Zm112 72a8 8 0 0 0-8 8 88 88 0 0 1-176 0 8 8 0 0 0-16 0 104.17 104.17 0 0 0 96 103.73V232a8 8 0 0 0 16 0v-24.27A104.17 104.17 0 0 0 232 136a8 8 0 0 0-8-8Z"/></svg>
+          <span>Mixer de áudio</span>
+        </button>
+        <button class="pill-btn pill-edit" id="edit-toggle" type="button" aria-pressed="false">
+          <svg viewBox="0 0 256 256" aria-hidden="true" class="icon"><path d="M227.32 73.37 182.63 28.69a16 16 0 0 0-22.63 0L36.69 152a15.86 15.86 0 0 0-4.69 11.31V208a16 16 0 0 0 16 16h44.69a15.86 15.86 0 0 0 11.31-4.69L227.32 96a16 16 0 0 0 0-22.63ZM92.69 208H48v-44.69l88-88L180.69 120ZM192 108.69 147.31 64l24-24L216 84.69Z"/></svg>
+          <span>Editar atalhos</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Modal de confirmação -->
+    <div class="confirm-modal" id="confirm-modal" hidden>
+      <div class="confirm-card">
+        <div class="confirm-icon" id="confirm-icon" aria-hidden="true"></div>
+        <h2 id="confirm-title">Confirmar?</h2>
+        <p id="confirm-body"></p>
+        <div class="confirm-actions">
+          <button type="button" class="btn-ghost" id="confirm-no">Cancelar</button>
+          <button type="button" class="btn-primary" id="confirm-yes">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="/app.js?v=69" type="module"></script>
+  </body>
+</html>

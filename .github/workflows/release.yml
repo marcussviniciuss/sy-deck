@@ -1,0 +1,66 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: node22-win-x64
+            artifact: sy-deck-win.exe
+          - os: macos-latest
+            target: node22-macos-x64
+            artifact: sy-deck-mac
+          - os: ubuntu-latest
+            target: node22-linux-x64
+            artifact: sy-deck-linux
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install bridge deps
+        working-directory: bridge
+        run: npm ci
+
+      - name: Bundle
+        working-directory: bridge
+        run: npx esbuild src/server.js --bundle --platform=node --target=node20 --format=cjs --external:@ngrok/ngrok --outfile=dist/bundle.cjs
+
+      - name: Package binary
+        working-directory: bridge
+        run: npx pkg dist/bundle.cjs --targets ${{ matrix.target }} --output dist/${{ matrix.artifact }} --config pkg.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: bridge/dist/${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

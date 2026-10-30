@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Pocket Deck",
+  "version": "0.1.0",
+  "identifier": "tech.mcloud.pocketdeck",
+  "build": {
+    "beforeDevCommand": "",
+    "beforeBuildCommand": "",
+    "frontendDist": "../../bridge/public",
+    "devUrl": "http://127.0.0.1:8787"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Pocket Deck",
+        "width": 480,
+        "height": 720,
+        "minWidth": 360,
+        "minHeight": 520,
+        "resizable": true,
+        "theme": "Dark"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": ["binaries/pocket-deck-bridge"],
+    "resources": [],
+    "copyright": "",
+    "category": "Utility",
+    "shortDescription": "Stream Deck pela Wi-Fi para o OBS.",
+    "longDescription": "Transforma o celular num Stream Deck. Fala com o OBS WebSocket na rede local."
+  }
+}

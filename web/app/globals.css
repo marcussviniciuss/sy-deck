@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* SY Community dark palette */
+    --bg: 212 70% 5%;
+    --bg-elev: 212 50% 9%;
+    --bg-elev-2: 212 40% 13%;
+    --border: 212 40% 16%;
+    --fg: 210 40% 98%;
+    --muted: 210 20% 65%;
+    --primary: 211 87% 51%;
+    --primary-fg: 0 0% 100%;
+    --accent: 210 78% 28%;
+    --danger: 358 75% 60%;
+
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-display: 'Orbitron', var(--font-sans);
+
+    color-scheme: dark;
+  }
+
+  html,
+  body {
+    @apply bg-bg text-fg antialiased;
+    font-family: var(--font-sans);
+  }
+
+  :is(button, [role='button'], a[href], select, [type='submit']) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
